@@ -11,6 +11,17 @@ from typing import Any
 import aiosqlite
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS access (
+    user_id INTEGER PRIMARY KEY,
+    status TEXT NOT NULL CHECK (status IN ('approved', 'pending', 'blocked')),
+    first_name TEXT,
+    username TEXT,
+    updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY,
     first_name TEXT,
@@ -119,6 +130,45 @@ class Storage:
     async def active_user_ids(self) -> list[int]:
         async with self.db.execute("SELECT id FROM users WHERE is_blocked=0 ORDER BY id") as cur:
             return [r[0] for r in await cur.fetchall()]
+
+    # access control (owner-managed) ------------------------------------------
+    async def get_access(self, user_id: int) -> str | None:
+        async with self.db.execute("SELECT status FROM access WHERE user_id=?", (user_id,)) as cur:
+            row = await cur.fetchone()
+        return row[0] if row else None
+
+    async def set_access(self, user_id: int, status: str | None,
+                         first_name: str | None = None, username: str | None = None) -> None:
+        """status: approved | pending | blocked, or None to forget the user (back to 'unknown')."""
+        if status is None:
+            await self.db.execute("DELETE FROM access WHERE user_id=?", (user_id,))
+        else:
+            await self.db.execute(
+                """INSERT INTO access(user_id, status, first_name, username, updated_at) VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(user_id) DO UPDATE SET status=excluded.status, updated_at=excluded.updated_at,
+                       first_name=COALESCE(excluded.first_name, access.first_name),
+                       username=COALESCE(excluded.username, access.username)""",
+                (user_id, status, (first_name or "")[:128] or None, (username or "")[:64] or None, iso()),
+            )
+        await self.db.commit()
+
+    async def list_access(self, status: str, limit: int = 50) -> list[dict[str, Any]]:
+        async with self.db.execute(
+            "SELECT user_id, first_name, username, updated_at FROM access WHERE status=? "
+            "ORDER BY updated_at DESC LIMIT ?", (status, limit),
+        ) as cur:
+            return [dict(zip(("user_id", "first_name", "username", "updated_at"), r)) for r in await cur.fetchall()]
+
+    async def get_setting(self, key: str) -> str | None:
+        async with self.db.execute("SELECT value FROM settings WHERE key=?", (key,)) as cur:
+            row = await cur.fetchone()
+        return row[0] if row else None
+
+    async def set_setting(self, key: str, value: str) -> None:
+        await self.db.execute(
+            "INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, value))
+        await self.db.commit()
 
     # downloads -----------------------------------------------------------
     async def add_download(self, row: dict[str, Any]) -> None:

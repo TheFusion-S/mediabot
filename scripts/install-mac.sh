@@ -6,7 +6,7 @@
 #   1. Homebrew va kerakli dasturlarni o'rnatadi (python@3.12, ffmpeg, deno, cloudflared)
 #   2. Loyihani ~/MediaBot ga ko'chiradi va Python kutubxonalarini o'rnatadi
 #   3. Bot tokenini so'raydi (ekranda ko'rinmaydi) va tekshiradi
-#   4. Telegram ID'ingizni o'zi aniqlaydi va botni faqat sizga qulflaydi
+#   4. Telegram ID'ingizni o'zi aniqlaydi va sizni bot egasi qiladi (/mode, /users)
 #   5. Botni + Mini App tunnelini Mac yoqilganda o'zi ishga tushadigan qiladi (launchd)
 #  Qayta ishga tushirish xavfsiz: bor narsalarni qayta o'rnatmaydi, .env saqlanadi.
 # =====================================================================
@@ -77,7 +77,6 @@ chmod 600 .env
 "${ENVT[@]}" set DOWNLOAD_DIR "$APP/data/downloads"
 "${ENVT[@]}" set DB_PATH "$APP/data/mediabot.db"
 "${ENVT[@]}" set DEV_MODE false
-"${ENVT[@]}" set PUBLIC_MODE false
 case "$("${ENVT[@]}" get WEBAPP_URL)" in *example.com*) "${ENVT[@]}" set WEBAPP_URL "" ;; esac
 
 # ---------------------------------------------------------------- 4. Token
@@ -100,10 +99,11 @@ done
 ok "bot: @$BOTNAME"
 
 # ---------------------------------------------------------------- 5. Telegram ID
-step "5/7  Botni faqat sizga qulflash"
-IDS="$("${ENVT[@]}" get ALLOWED_USER_IDS)"
+step "5/7  Bot egasini belgilash"
+IDS="$("${ENVT[@]}" get ADMIN_IDS)"
+[ -n "$IDS" ] || IDS="$("${ENVT[@]}" get ALLOWED_USER_IDS)"   # eski o'rnatishlar
 if [ -n "$IDS" ]; then
-  ok "ALLOWED_USER_IDS=$IDS (o'zgartirish uchun $APP/.env ni tahrirlang)"
+  ok "bot egasi: ADMIN_IDS=$IDS (o'zgartirish uchun $APP/.env ni tahrirlang)"
 else
   launchctl bootout "gui/$UIDN/$LABEL" >/dev/null 2>&1 || true   # bot ishlab tursa getUpdates to'qnashadi
   tg "deleteWebhook" >/dev/null 2>&1 || true
@@ -116,8 +116,8 @@ else
     read -r -p "  Topildi: $WHO (ID $CID). Bu sizmisiz? [H/y] " ans
     case "${ans:-h}" in [HhYy]*) IDS="$CID" ;; *) warn "Unda botga yana /start yuboring." ;; esac
   done
-  "${ENVT[@]}" set ALLOWED_USER_IDS "$IDS"
-  ok "bot endi faqat ID $IDS uchun ishlaydi"
+  "${ENVT[@]}" set ADMIN_IDS "$IDS"
+  ok "bot egasi: ID $IDS (rejim: botda /mode — ochiq yoki yopiq)"
 fi
 
 # ---------------------------------------------------------------- 6. launchd

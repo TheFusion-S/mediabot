@@ -75,7 +75,7 @@
 
   var ERRORS = {
     unauthorized: ['Sessiya tasdiqlanmadi', 'Ilovani bot orqali qayta oching'],
-    forbidden: ['Shaxsiy ilova', 'Bu ilovadan faqat uning egasi foydalana oladi.'],
+    forbidden: ['Ruxsat kerak', 'Botga /start yozib, egasidan ruxsat so‘rang.'],
     bad_request: ['So‘rov noto‘g‘ri', 'Sahifani yangilab, qayta urinib ko‘ring.'],
     invalid_url: ['Havola noto‘g‘ri', 'Instagram yoki YouTube video havolasini yuboring.'],
     unsupported: ['Qo‘llab-quvvatlanmaydi', 'Bu turdagi havola hozircha qo‘llab-quvvatlanmaydi.'],
@@ -1639,8 +1639,8 @@
     var list = [];
     if (S.forbidden) {
       list.push(h('div', { class: 'banner is-error', role: 'alert' }, icon('lock'),
-        h('div', null, h('p', { class: 'banner-title', text: '🔒 Bu shaxsiy ilova' }),
-          h('p', { class: 'banner-text', text: 'Undan faqat egasi foydalana oladi. Agar egasi siz bo‘lsangiz, Telegram ID’ingizni .env faylidagi ALLOWED_USER_IDS ga yozing.' }))));
+        h('div', null, h('p', { class: 'banner-title', text: '🔒 Ruxsat kerak' }),
+          h('p', { class: 'banner-text', text: 'Bot hozir yopiq rejimda. Botga /start yozing va “🔑 Ruxsat so‘rash” tugmasini bosing — egasi ruxsat bergach ilova ochiladi.' }))));
     } else if (S.authFailed) {
       list.push(h('div', { class: 'banner is-error', role: 'alert' }, icon('lock'),
         h('div', null, h('p', { class: 'banner-title', text: 'Ilovani bot orqali qayta oching' }),

@@ -108,12 +108,12 @@ async def run(settings) -> None:
     from aiogram.client.session.aiohttp import AiohttpSession
     from aiogram.client.telegram import TelegramAPIServer
     from aiogram.enums import ParseMode
-    from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
+    from aiogram.types import BotCommand, BotCommandScopeChat, MenuButtonWebApp, WebAppInfo
     from aiohttp import web
 
     from . import texts
     from .downloader import Downloader
-    from .config import access_set
+    from .access import Access
     from .handlers import setup_dispatcher
     from .jobs import JobManager
     from .pipeline import Pipeline
@@ -152,27 +152,26 @@ async def run(settings) -> None:
     if stale:
         log.info("removed %d stale item(s) from %s", stale, settings.download_dir)
     probe_limiter = RateLimiter(60, 600)  # shared by the Mini App API and the bot preview
+    access = Access(settings, storage)
 
     app = create_app(ApiDeps(
         bot_token=token, storage=storage, downloader=downloader, jobs=jobs, webapp_dir=settings.webapp_dir,
         max_upload_mb=settings.max_upload_mb, max_duration_min=settings.max_duration_min,
         hourly_limit=settings.user_hourly_limit, dev_mode=settings.dev_mode,
         probe_limiter=probe_limiter, init_data_max_age=int(settings.init_data_max_age_hours * 3600),
-        allowed_user_ids=access_set(settings),
+        access=access,
     ))
-    allowed = access_set(settings)
-    if allowed is None:
-        log.warning("PUBLIC_MODE=true: the bot and Mini App are open to EVERY Telegram user")
-    elif not allowed:
-        log.warning("ALLOWED_USER_IDS is empty: setup mode. Send /start to the bot to learn your ID, "
-                    "put it into .env as ALLOWED_USER_IDS=<id> and restart.")
-    else:
-        log.info("private mode: %d allowed user(s)", len(allowed))
+    mode = await access.mode()
+    if not access.owners:
+        log.warning("ADMIN_IDS is empty: no bot owner. Send /id to the bot, put ADMIN_IDS=<id> into the "
+                    "settings and restart to get /mode, /users, /stats.")
+    log.info("access mode: %s, owners: %d", mode, len(access.owners))
     runner = web.AppRunner(app, access_log=None, handle_signals=False)
     await runner.setup()
     site = web.TCPSite(runner, settings.web_host, settings.web_port)
 
-    dp = Dispatcher(settings=settings, db=storage, downloader=downloader, jobs=jobs, probe_limiter=probe_limiter)
+    dp = Dispatcher(settings=settings, db=storage, downloader=downloader, jobs=jobs, probe_limiter=probe_limiter,
+                    access=access)
     setup_dispatcher(dp)
 
     stop = asyncio.Event()
@@ -193,6 +192,11 @@ async def run(settings) -> None:
             log.info("bot @%s started", me.username)
             try:
                 await bot.set_my_commands([BotCommand(command=c, description=d) for c, d in texts.COMMANDS.items()])
+                owner_cmds = [BotCommand(command=c, description=d)
+                              for c, d in {**texts.COMMANDS, **texts.OWNER_COMMANDS}.items()]
+                for owner in access.owners:  # owners also see /mode, /users, /stats in their menu
+                    with contextlib.suppress(Exception):
+                        await bot.set_my_commands(owner_cmds, scope=BotCommandScopeChat(chat_id=owner))
                 await bot.set_my_description(description=texts.BOT_DESCRIPTION)
                 await bot.set_my_short_description(short_description=texts.BOT_SHORT_DESCRIPTION)
                 await ensure_avatar(bot, settings)

@@ -48,6 +48,7 @@ COMMANDS = {
     "start": "Botni ishga tushirish",
     "help": "Yordam",
     "history": "Oxirgi yuklamalar",
+    "id": "Telegram ID'im",
 }
 
 # progress
@@ -116,7 +117,7 @@ BROADCAST_DONE = "✅ Tarqatish tugadi.\nYuborildi: {sent}\nBloklagan: {blocked}
 
 ERRORS = {
     "unauthorized": "Avtorizatsiya xatosi. Mini App'ni bot orqali qayta oching.",
-    "forbidden": "Bu shaxsiy ilova. Undan faqat egasi foydalana oladi.",
+    "forbidden": "Bot hozir yopiq. Botga /start yozib, egasidan ruxsat so'rang.",
     "bad_request": "Noto'g'ri so'rov.",
     "invalid_url": "Havola yaroqsiz. Faqat Instagram va YouTube havolalari qabul qilinadi.",
     "unsupported": "Bu turdagi havola qo'llab-quvvatlanmaydi. Reels, post, Shorts yoki video havolasini yuboring.",
@@ -142,14 +143,69 @@ YT_BLOCKED = (
     "YouTube bu serverdan so'rovlarni vaqtincha cheklab qo'ydi (\"bot emasligingizni tasdiqlang\"). "
     "Birozdan keyin qayta urinib ko'ring. Takrorlansa — YouTube cookies faylini ulang (README → cookies)."
 )
-PRIVATE_BOT = "🔒 Bu shaxsiy bot. Undan faqat egasi foydalana oladi."
+# --- access control -------------------------------------------------------------------
 SETUP_MODE = (
     "⚙️ <b>Bot sozlash rejimida.</b>\n\n"
     "Sizning Telegram ID'ingiz: <code>{user_id}</code>\n\n"
-    "<code>.env</code> faylida quyidagini yozing va botni qayta ishga tushiring:\n"
-    "<code>ALLOWED_USER_IDS={user_id}</code>\n\n"
-    "Shundan keyin bot va Mini App faqat siz uchun ishlaydi."
+    "Bot egasi bo'lish uchun sozlamalarga (<code>.env</code> yoki serverdagi Environment variables) yozing:\n"
+    "<code>ADMIN_IDS={user_id}</code>\n"
+    "va botni qayta ishga tushiring."
 )
+MY_ID = "🆔 Sizning Telegram ID'ingiz: <code>{user_id}</code>"
+OWNER_HINT = (
+    "\n\nℹ️ Bot egasi hali belgilanmagan. Egasi bo'lish uchun sozlamalarga "
+    "<code>ADMIN_IDS={user_id}</code> yozing va botni qayta ishga tushiring."
+)
+PRIVATE_BOT = "🔒 Bu bot hozir yopiq — undan faqat egasi ruxsat bergan foydalanuvchilar foydalana oladi."
+REQUEST_BUTTON = "🔑 Ruxsat so'rash"
+REQUEST_SENT = "✅ So'rovingiz bot egasiga yuborildi. Ruxsat berilganda sizga xabar keladi."
+REQUEST_PENDING = "⏳ So'rovingiz bot egasida ko'rib chiqilmoqda. Javobni kuting."
+OWNER_REQUEST = (
+    "🔑 <b>Ruxsat so'rovi</b>\n\n"
+    "{who}\nID: <code>{user_id}</code>\n\n"
+    "Botdan foydalanishga ruxsat berasizmi?"
+)
+BTN_APPROVE = "✅ Ruxsat berish"
+BTN_REJECT = "❌ Rad etish"
+BTN_BLOCK = "🚫 Bloklash"
+BTN_REVOKE = "↩️ Ruxsatni olish"
+BTN_UNBLOCK = "♻️ Blokdan chiqarish"
+OWNER_DECIDED = "{who} — {result}"
+RESULT_APPROVED = "✅ ruxsat berildi"
+RESULT_REJECTED = "❌ rad etildi"
+RESULT_BLOCKED = "🚫 bloklandi"
+RESULT_REVOKED = "↩️ ruxsat olib qo'yildi"
+RESULT_UNBLOCKED = "♻️ blokdan chiqarildi"
+USER_APPROVED = "🎉 Bot egasi sizga ruxsat berdi! Endi Instagram yoki YouTube havolasini yuboring."
+USER_REJECTED = "😔 Bot egasi so'rovingizni rad etdi."
+USER_REVOKED = "ℹ️ Bot egasi botdan foydalanish ruxsatingizni olib qo'ydi."
+OWNER_ONLY = "⛔ Bu buyruq faqat bot egasi uchun."
+MODE_STATUS = (
+    "⚙️ <b>Kirish rejimi:</b> {mode}\n\n"
+    "🌐 <b>Ochiq</b> — botdan hamma foydalana oladi (bloklanganlardan tashqari).\n"
+    "🔒 <b>Yopiq</b> — faqat siz va siz ruxsat berganlar. Boshqalar \"Ruxsat so'rash\" tugmasini ko'radi,\n"
+    "so'rov sizga keladi."
+)
+MODE_OPEN = "🌐 Ochiq"
+MODE_PRIVATE = "🔒 Yopiq"
+MODE_CHANGED = "Rejim o'zgartirildi: {mode}"
+USERS_TITLE = "👥 <b>Foydalanuvchilar</b> (rejim: {mode})"
+USERS_APPROVED = "\n\n✅ <b>Ruxsat berilganlar:</b> {count}"
+USERS_PENDING = "\n⏳ <b>Kutayotgan so'rovlar:</b> {count}"
+USERS_BLOCKED = "\n🚫 <b>Bloklanganlar:</b> {count}"
+USERS_EMPTY = "\n\nHozircha ro'yxat bo'sh."
+USERS_HELP = (
+    "\n\nBuyruqlar: <code>/allow ID</code> — ruxsat berish, <code>/revoke ID</code> — ruxsatni olish, "
+    "<code>/block ID</code> — bloklash, <code>/unblock ID</code> — blokdan chiqarish."
+)
+USER_CMD_USAGE = "Foydalanish: <code>/{cmd} 123456789</code> (foydalanuvchi ID'si)"
+USER_CMD_DONE = "Bajarildi: <code>{user_id}</code> — {result}"
+CANNOT_TARGET_OWNER = "Bot egasiga bu amalni qo'llab bo'lmaydi."
+OWNER_COMMANDS = {
+    "mode": "Kirish rejimi: ochiq / yopiq",
+    "users": "Foydalanuvchilar va so'rovlar",
+    "stats": "Statistika",
+}
 
 
 def error_text(code: str, **params: Any) -> str:

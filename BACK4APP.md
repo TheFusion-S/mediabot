@@ -25,17 +25,31 @@ https://www.back4app.com → **Sign up** → **Continue with GitHub** (TheFusion
 
 5. **Create App** / **Deploy** ni bosing. Birinchi yig'ish 5–10 daqiqa oladi.
 
-## 3. Botni o'zingizga qulflang
-1. Deploy tugagach, Telegram'da botingizga `/start` yuboring.
-   Bot javob beradi: *"Sozlash rejimi… Sizning Telegram ID'ingiz: 123456789"*.
+## 3. Bot egasini belgilang (siz)
+1. Deploy tugagach, Telegram'da botingizga `/id` yuboring — bot ID'ingizni aytadi (masalan `123456789`).
 2. Back4App → ilovangiz → **Settings / Environment variables** ga qo'shing:
 
 | Nom | Qiymat |
 |---|---|
-| `ALLOWED_USER_IDS` | bot aytgan ID |
+| `ADMIN_IDS` | bot aytgan ID |
 | `WEBAPP_URL` | ilova sahifasida ko'rsatilgan manzil, masalan `https://mediabot-xxxx.b4a.run` |
 
-3. Saqlang va **Redeploy** qiling. Endi bot faqat siz uchun ishlaydi, `/start` da 📱 Mini App tugmasi chiqadi.
+3. Saqlang va **Redeploy** qiling. Endi `/start` da 📱 Mini App tugmasi chiqadi, sizda esa egasi
+   buyruqlari paydo bo'ladi.
+
+## Kim foydalana oladi — buni o'zingiz boshqarasiz
+
+| Buyruq (faqat egasi) | Nima qiladi |
+|---|---|
+| `/mode` | 🌐 **Ochiq** (hamma foydalanadi) yoki 🔒 **Yopiq** (faqat siz ruxsat berganlar) — tugma bilan |
+| `/users` | ruxsat berilganlar, kutayotgan so'rovlar, bloklanganlar ro'yxati |
+| `/allow ID`, `/revoke ID` | ruxsat berish / olib qo'yish |
+| `/block ID`, `/unblock ID` | bloklash / blokdan chiqarish |
+| `/stats` | statistika |
+
+Standart holatda bot **ochiq**. Yopiq rejimda begona odam botga yozsa, **🔑 Ruxsat so'rash** tugmasini
+ko'radi; so'rov sizga **✅ Ruxsat berish / ❌ Rad etish / 🚫 Bloklash** tugmalari bilan keladi.
+Rejim va ruxsatlar qayta deploy qilmasdan darhol ishlaydi.
 
 ## 4. Uxlab qolmasligi uchun (tavsiya)
 https://uptimerobot.com (bepul, karta kerak emas) → **New monitor** → turi **HTTP(s)** →
@@ -46,5 +60,6 @@ Bu har 5 daqiqada botni "uyg'otib" turadi.
 Kodda o'zgarish bo'lsa, u GitHub'ga yuklanadi va Back4App avtomatik qayta yig'adi
 (yoki ilova sahifasida **Redeploy** ni bosing).
 
-⚠️ Bepul tarifda disk doimiy emas: qayta deploy qilinganda yuklashlar tarixi va kesh tozalanadi. Bu botning
-ishlashiga ta'sir qilmaydi.
+⚠️ Bepul tarifda disk doimiy emas: qayta deploy qilinganda tarix, kesh, **ruxsatlar ro'yxati va /mode tanlovi**
+tozalanadi (rejim `ACCESS_MODE` qiymatiga qaytadi). Doimiy yopiq qilmoqchi bo'lsangiz `ACCESS_MODE=private`,
+doimiy ruxsat berilganlar uchun `ALLOWED_USER_IDS=ID1,ID2` o'zgaruvchilarini qo'shing.

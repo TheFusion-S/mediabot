@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable
 from aiohttp import web
 
 from . import texts
+from .access import Access
 from .downloader import FORMAT_IDS, Downloader
 from .errors import AppError
 from .jobs import JobManager, job_from_row
@@ -54,8 +55,8 @@ class ApiDeps:
     dev_mode: bool = False
     probe_limiter: RateLimiter | None = None
     init_data_max_age: int = 6 * 3600
-    # None = everyone; otherwise only these Telegram user IDs (empty = nobody, setup mode)
-    allowed_user_ids: frozenset[int] | None = None
+    # who may use the Mini App (same rules as the bot); None = everyone (tests / dev)
+    access: Access | None = None
 
 
 DEPS = web.AppKey("deps", ApiDeps)
@@ -113,7 +114,7 @@ async def auth(request: web.Request, handler: Callable[[web.Request], Awaitable[
         except InitDataError as exc:
             log.info("initData rejected: %s", exc)
             return fail("unauthorized")
-    if deps.allowed_user_ids is not None and user is not DEV_USER and user.id not in deps.allowed_user_ids:
+    if deps.access is not None and user is not DEV_USER and not (await deps.access.check(user.id)).allowed:
         log.info("webapp access denied for user %s", user.id)
         return fail("forbidden")
     request[USER] = user

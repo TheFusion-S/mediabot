@@ -6,7 +6,7 @@
 #   1. Dasturlar: Python 3.12, ffmpeg, deno, Caddy (HTTPS), ufw (firewall)
 #   2. Loyiha -> /opt/mediabot, alohida "mediabot" tizim foydalanuvchisi
 #   3. Bot tokenini so'raydi (ko'rinmaydi) va tekshiradi
-#   4. Telegram ID'ingizni o'zi aniqlaydi -> bot faqat sizga ishlaydi
+#   4. Telegram ID'ingizni o'zi aniqlaydi -> siz bot egasisiz (/mode, /users)
 #   5. Mini App uchun doimiy HTTPS manzil: https://<IP>.sslip.io (domen sotib olish shart emas)
 #   6. systemd xizmati: server yoqilganda o'zi ishga tushadi, yiqilsa qayta turadi
 #  Qayta ishga tushirish xavfsiz (yangilash uchun ham shu skript).
@@ -88,7 +88,6 @@ ENVT=(.venv/bin/python scripts/envtool.py)
 "${ENVT[@]}" set DOWNLOAD_DIR "$APP/data/downloads"
 "${ENVT[@]}" set DB_PATH "$APP/data/mediabot.db"
 "${ENVT[@]}" set DEV_MODE false
-"${ENVT[@]}" set PUBLIC_MODE false
 if [ -f "$APP/cookies.txt" ]; then "${ENVT[@]}" set COOKIES_FILE "$APP/cookies.txt"; fi
 
 # ---------------------------------------------------------------- 3. Token
@@ -111,10 +110,11 @@ done
 ok "bot: @$BOTNAME"
 
 # ---------------------------------------------------------------- 4. Telegram ID
-step "4/7  Botni faqat sizga qulflash"
-IDS="$("${ENVT[@]}" get ALLOWED_USER_IDS)"
+step "4/7  Bot egasini belgilash"
+IDS="$("${ENVT[@]}" get ADMIN_IDS)"
+[ -n "$IDS" ] || IDS="$("${ENVT[@]}" get ALLOWED_USER_IDS)"   # eski o'rnatishlar
 if [ -n "$IDS" ]; then
-  ok "ALLOWED_USER_IDS=$IDS"
+  ok "bot egasi: ADMIN_IDS=$IDS"
 else
   tg deleteWebhook >/dev/null 2>&1 || true
   while [ -z "$IDS" ]; do
@@ -126,8 +126,8 @@ else
     read -r -p "  Topildi: $WHO (ID $CID). Bu sizmisiz? [H/y] " ans
     case "${ans:-h}" in [HhYy]*) IDS="$CID" ;; *) warn "Unda botga yana /start yuboring." ;; esac
   done
-  "${ENVT[@]}" set ALLOWED_USER_IDS "$IDS"
-  ok "bot endi faqat ID $IDS uchun ishlaydi"
+  "${ENVT[@]}" set ADMIN_IDS "$IDS"
+  ok "bot egasi: ID $IDS (rejim: botda /mode — ochiq yoki yopiq)"
 fi
 # ---------------------------------------------------------------- 5. HTTPS (Mini App)
 step "5/7  Mini App uchun HTTPS"

@@ -63,7 +63,7 @@ scp ~/Downloads/MediaBot-tayyor.zip root@IP:/root/ && ssh -t root@IP "apt-get up
 - Server **paroli** ikki marta so'raladi (yozganda ko'rinmaydi — bu normal).
 - Keyin skript **bot tokenini** so'raydi (Cmd+V, ko'rinmaydi) va botga **/start** yuborishingizni aytadi.
 
-Qolganini skript o'zi qiladi: dasturlar, botni faqat sizga qulflash, Mini App uchun HTTPS
+Qolganini skript o'zi qiladi: dasturlar, sizni bot egasi qilish (/mode bilan ochiq yoki yopiq), Mini App uchun HTTPS
 (`https://<IP>.sslip.io` — domen sotib olish shart emas), server qayta yoqilganda avtomatik ishga tushish.
 Oxirida **✅ Tayyor!** chiqadi. Endi Mac'ni o'chirsangiz ham bot ishlaydi.
 

@@ -14,8 +14,8 @@ MediaBot Instagram (Reels, post, karusel) va YouTube (Shorts, oddiy video) havol
 - Mini App (Telegram ichidagi veb-ilova): Instagram / YouTube (Shorts | Videos) bo'limlari, preview,
   progress, tarix va statistika.
 
-> 🔒 **Shaxsiy bot.** Standart holatda bot va Mini App faqat `ALLOWED_USER_IDS` dagi foydalanuvchi(lar)
-> uchun ishlaydi. Boshqalar "Bu shaxsiy bot" javobini oladi, Mini App esa ularga ochilmaydi.
+> 🔑 **Kirishni egasi boshqaradi.** Bot standart holatda ochiq; egasi (`ADMIN_IDS`) botda `/mode` bilan uni yopiq
+> qilishi mumkin — shunda boshqalar "Ruxsat so'rash" tugmasini bosadi va egasi ✅/❌ bilan javob beradi (`/users`).
 > Tez boshlash uchun **[BOSHLASH.md](BOSHLASH.md)**, serverga (VPS) o'rnatish uchun **[SERVER.md](SERVER.md)** ni o'qing.
 
 ## Tuzilma
@@ -59,7 +59,7 @@ cd mediabot
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -c requirements.lock
-cp .env.example .env      # BOT_TOKEN, WEBAPP_URL, ALLOWED_USER_IDS ni to'ldiring
+cp .env.example .env      # BOT_TOKEN, WEBAPP_URL, ADMIN_IDS ni to'ldiring
 python -m bot.main
 ```
 

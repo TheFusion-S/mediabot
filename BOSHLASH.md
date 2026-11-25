@@ -1,8 +1,8 @@
-# 🚀 Tez boshlash — shaxsiy MediaBot
+# 🚀 Tez boshlash — MediaBot
 
-Bu bot **faqat siz uchun** ishlaydi. Boshqa odamlar botga yozsa "🔒 Bu shaxsiy bot" javobini oladi,
-Mini App esa ularga ochilmaydi. Hech narsa hech qayerga yuklanmaydi: bot sizning kompyuteringiz
-yoki serveringizda ishlaydi.
+Botdan kim foydalanishini **siz** boshqarasiz: standart holatda bot ochiq (hamma foydalanadi), `/mode`
+buyrug'i bilan uni yopiq qilsangiz — faqat siz ruxsat bergan odamlar foydalanadi (ular "🔑 Ruxsat so'rash"
+tugmasini bosadi, sizga ✅/❌ tugmalari bilan so'rov keladi).
 
 ---
 
@@ -22,7 +22,7 @@ Bot kompyuteringiz o'chiq bo'lganda ham ishlashi kerak bo'lsa — **[SERVER.md](
    ```
 
 4. Skript so'raganlarini bajaring: tokenni joylang (ekranda ko'rinmaydi), botga `/start` yuboring.
-   Qolganini — dasturlarni o'rnatish, botni faqat sizga qulflash, Mini App tunneli, Mac yoqilganda
+   Qolganini — dasturlarni o'rnatish, sizni bot egasi qilish, Mini App tunneli, Mac yoqilganda
    avtomatik ishga tushish — skript o'zi qiladi. Keyin `mediabot status` / `mediabot logs` buyruqlari ishlaydi.
 
 Quyidagi qadamlar — skriptsiz (qo'lda) o'rnatish uchun.
@@ -42,7 +42,7 @@ Papka ichida `.env.example` faylidan nusxa oling va nomini `.env` qiling, keyin 
 
 ```
 BOT_TOKEN=bu_yerga_tokeningiz
-ALLOWED_USER_IDS=          ← hozircha bo'sh qoldiring (3-qadamda to'ldirasiz)
+ADMIN_IDS=                 ← hozircha bo'sh qoldiring (3-qadamda to'ldirasiz)
 WEBAPP_URL=                ← Mini App uchun (5-qadam), hozircha bo'sh bo'lishi mumkin
 ```
 
@@ -60,20 +60,21 @@ docker compose up -d --build
 
 (Docker'siz variant uchun kompyuteringizda **Python 3.12+**, **ffmpeg** va **deno** o'rnatilgan bo'lishi kerak.)
 
-Endi botingizga Telegram'da `/start` yuboring. Bot shunday javob beradi:
+Endi botingizga Telegram'da `/id` yuboring. Bot shunday javob beradi:
 
-> ⚙️ Bot sozlash rejimida. Sizning Telegram ID'ingiz: `123456789`
+> 🆔 Sizning Telegram ID'ingiz: `123456789`
 
-## 4-qadam. Botni o'zingizga qulflang
+## 4-qadam. O'zingizni bot egasi qiling
 
 `.env` fayliga ID'ingizni yozing:
 
 ```
-ALLOWED_USER_IDS=123456789
+ADMIN_IDS=123456789
 ```
 
 va botni qayta ishga tushiring (`docker compose restart` yoki skriptni qayta ishga tushiring).
-✅ Tayyor — endi bot faqat sizga ishlaydi. Unga Instagram yoki YouTube havolasini tashlang.
+✅ Tayyor — endi siz bot egasisiz: `/mode` (ochiq/yopiq), `/users` (ruxsatlar), `/stats`.
+Botga Instagram yoki YouTube havolasini tashlang.
 
 ## 5-qadam. Mini App (ixtiyoriy)
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import ipaddress
 
@@ -36,11 +36,12 @@ class Settings(BaseSettings):
     web_host: str = "0.0.0.0"
     web_port: int = Field(8080, ge=1, le=65535)
     admin_ids: Annotated[list[int], NoDecode] = Field(default_factory=list)
-    # Shaxsiy rejim: faqat shu Telegram ID'lar botdan va Mini App'dan foydalana oladi.
-    # Bo'sh bo'lsa bot "sozlash rejimi"da: hech narsa yuklamaydi, faqat /start'ga ID'ingizni aytadi.
+    # Oldindan ruxsat berilgan foydalanuvchilar (yopiq rejimda ham ishlay oladi). ADMIN_IDS bo'sh bo'lsa,
+    # bular bot egasi (admin) hisoblanadi.
     allowed_user_ids: Annotated[list[int], NoDecode] = Field(default_factory=list)
-    # true = hamma uchun ochiq bot (tavsiya etilmaydi). Standart: false (shaxsiy).
-    public_mode: bool = False
+    # Boshlang'ich rejim: "open" — hamma foydalana oladi, "private" — faqat egasi va u ruxsat berganlar.
+    # Ega rejimni botda /mode bilan istalgan payt o'zgartiradi (qayta deploy shart emas).
+    access_mode: Literal["open", "private"] = "open"
 
     max_upload_mb: int = Field(50, ge=1, le=2000)
     telegram_api_base: str | None = None
@@ -102,7 +103,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _owner_is_admin(self) -> "Settings":
-        """In private mode the owner(s) also get the admin commands unless ADMIN_IDS is set explicitly."""
+        """ALLOWED_USER_IDS doubles as the owner list when ADMIN_IDS is not set explicitly."""
         if not self.admin_ids and self.allowed_user_ids:
             self.admin_ids = list(self.allowed_user_ids)
         return self
@@ -147,9 +148,3 @@ class Settings(BaseSettings):
             "hourly_limit": self.user_hourly_limit,
         }
 
-
-def access_set(settings: "Settings") -> frozenset[int] | None:
-    """Who may use the bot: None = everyone (public_mode), otherwise the allowed IDs (may be empty)."""
-    if settings.public_mode:
-        return None
-    return frozenset(settings.allowed_user_ids) | frozenset(settings.admin_ids)

@@ -9,17 +9,18 @@ from aiogram import BaseMiddleware, Dispatcher, Router
 from aiogram.types import CallbackQuery, Message, TelegramObject
 
 from .. import texts
-from ..config import access_set
+from ..access import Access
 from ..ratelimit import FloodMiddleware
-from . import admin, callbacks, links, start
+from . import access as access_handlers, admin, callbacks, links, start
+from .access import request_keyboard
 
 
 class AccessMiddleware(BaseMiddleware):
-    """Private mode: only ALLOWED_USER_IDS (and ADMIN_IDS) reach any handler.
+    """Applies :class:`bot.access.Access` to every message / button press before any handler runs.
 
-    With an empty allow-list the bot is in setup mode: it downloads nothing and only tells
-    the person their Telegram ID so they can put it into .env. Strangers get a short notice
-    (at most once per hour each) in private chats and silence in groups.
+    Denied users in private chats get one explanation (with a "request access" button in private
+    mode, at most once per hour each); in groups the bot stays silent. ``/id`` and the request
+    button always pass through so people can find their ID and ask the owner for access.
     """
 
     NOTICE_EVERY = 3600.0
@@ -40,33 +41,60 @@ class AccessMiddleware(BaseMiddleware):
         self._notified[user_id] = now
         return True
 
+    @staticmethod
+    def _always_allowed(event: TelegramObject) -> bool:
+        if isinstance(event, Message):
+            cmd = (event.text or "").split(maxsplit=1)[0].split("@", 1)[0].lower() if event.text else ""
+            return cmd == "/id"
+        if isinstance(event, CallbackQuery):
+            return event.data == "acc:req"
+        return False
+
     async def __call__(
         self,
         handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        settings = data.get("settings")
-        allowed = access_set(settings) if settings is not None else frozenset()
         user = getattr(event, "from_user", None)
-        if allowed is None or (user is not None and user.id in allowed):
-            return await handler(event, data)
         if user is None:
             return None
-        setup = not allowed
+        access: Access | None = data.get("access")
+        if access is None:
+            settings, db = data.get("settings"), data.get("db")
+            if settings is None or db is None:  # misconfigured dispatcher: fail closed
+                return None
+            access = data["access"] = Access(settings, db)
+        decision = await access.check(user.id)
+        if decision.allowed or self._always_allowed(event):
+            return await handler(event, data)
+        if decision.reason == "blocked":
+            if isinstance(event, CallbackQuery):
+                await _safe(event.answer())
+            return None
         try:
             if isinstance(event, Message):
                 if event.chat.type != "private":
                     return None
-                if setup:
-                    await event.answer(texts.SETUP_MODE.format(user_id=user.id), parse_mode="HTML")
+                if decision.reason == "setup":
+                    await event.answer(texts.fmt(texts.SETUP_MODE, user_id=user.id), parse_mode="HTML")
+                elif decision.reason == "pending":
+                    if self._should_notify(user.id):
+                        await event.answer(texts.REQUEST_PENDING, parse_mode=None)
                 elif self._should_notify(user.id):
-                    await event.answer(texts.PRIVATE_BOT, parse_mode=None)
+                    await event.answer(texts.PRIVATE_BOT, parse_mode=None, reply_markup=request_keyboard())
             elif isinstance(event, CallbackQuery):
                 await event.answer(texts.PRIVATE_BOT, show_alert=True)
         except Exception:  # pragma: no cover - never let a notice crash the update loop
             pass
         return None
+
+
+async def _safe(aw: Awaitable[Any]) -> None:
+    try:
+        await aw
+    except Exception:  # pragma: no cover
+        pass
 
 
 class UserMiddleware(BaseMiddleware):
@@ -91,14 +119,14 @@ class UserMiddleware(BaseMiddleware):
 
 
 def setup_dispatcher(dp: Dispatcher) -> None:
-    access = AccessMiddleware()
+    gate = AccessMiddleware()
     flood = FloodMiddleware()
     users = UserMiddleware()
     for observer in (dp.message, dp.callback_query):
-        observer.outer_middleware(access)  # first: strangers never reach limits, DB or handlers
+        observer.outer_middleware(gate)  # first: strangers never reach limits, DB or handlers
         observer.outer_middleware(flood)
         observer.outer_middleware(users)
     router = Router(name="mediabot")
-    for module in (start, admin, callbacks, links):  # catch-all link handler last
+    for module in (start, admin, access_handlers, callbacks, links):  # catch-all link handler last
         module.register(router)
     dp.include_router(router)
