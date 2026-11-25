@@ -1,0 +1,72 @@
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+services:
+  bot:
+    build:
+      context: .
+      args:
+        YTDLP_UPGRADE: ${YTDLP_UPGRADE:-0}
+    image: mediabot:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DOWNLOAD_DIR: /app/data/downloads
+      DB_PATH: /app/data/mediabot.db
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: 8080
+    ports:
+      # Faqat localhost'da ochiladi — tashqariga HTTPS reverse proxy (Caddy/nginx) yoki cloudflared orqali chiqaring
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Named volume: Docker uni image'dagi egasi (uid 10001) bilan yaratadi -> yozish huquqi muammosi yo'q.
+      # Bind mount (./data:/app/data) ishlatsangiz: sudo chown -R 10001:10001 ./data
+      - mediabot-data:/app/data
+      # Instagram cookies (ixtiyoriy): .env da COOKIES_FILE=/app/cookies.txt qiling.
+      # Read-only bo'lishi mumkin: bot har bir yuklash uchun nusxa oladi, asl faylga yozmaydi.
+      # - ./cookies.txt:/app/cookies.txt:ro
+    <<: *hardening
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    mem_limit: 2g
+    pids_limit: 256
+    stop_grace_period: 30s
+
+  # 2 GB gacha fayl yuborish uchun local Bot API server:
+  #   docker compose --profile local-api up -d
+  # .env: TELEGRAM_API_BASE=http://telegram-bot-api:8081, MAX_UPLOAD_MB=2000,
+  #       TELEGRAM_API_ID=..., TELEGRAM_API_HASH=... (https://my.telegram.org)
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    profiles: ["local-api"]
+    restart: unless-stopped
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
+      TELEGRAM_LOCAL: "1"
+    volumes:
+      - telegram-bot-api-data:/var/lib/telegram-bot-api
+    expose:
+      - "8081"
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    pids_limit: 256
+
+  # Domen/sertifikat bo'lmasa — Cloudflare quick tunnel orqali vaqtinchalik HTTPS manzil:
+  #   docker compose --profile tunnel up -d && docker compose logs cloudflared | grep trycloudflare
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://bot:8080
+    depends_on:
+      - bot
+    <<: *hardening
+    mem_limit: 256m
+    pids_limit: 128
+
+volumes:
+  mediabot-data:
+  telegram-bot-api-data:

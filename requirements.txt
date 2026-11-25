@@ -1,0 +1,7 @@
+# Direct runtime dependencies, pinned exactly (SEC-L6). Full transitive pins: requirements.lock
+aiogram==3.32.0
+aiohttp==3.14.5          # >= 3.12.14 required (security fixes)
+yt-dlp[default]==2026.10.26  # [default] pulls yt-dlp-ejs etc. for YouTube JS challenges (needs deno)
+aiosqlite==0.22.1
+pydantic==2.14.4
+pydantic-settings==2.16.3
