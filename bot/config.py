@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     init_data_max_age_hours: float = Field(6, gt=0, le=24)
 
     webapp_dir: Path = PROJECT_ROOT / "webapp"
+    # Bepul hostinglar (Render va h.k.) 15 daqiqa so'rov bo'lmasa xizmatni "uxlatadi". KEEPALIVE_URL berilsa,
+    # bot har KEEPALIVE_INTERVAL_SEC soniyada o'z manzilidagi /healthz ga murojaat qilib uyg'oq turadi.
+    keepalive_url: str = ""
+    keepalive_interval_sec: int = Field(600, ge=60, le=3600)
+    # Render buni o'zi beradi (https://<nom>.onrender.com): WEBAPP_URL va KEEPALIVE_URL uchun standart qiymat.
+    render_external_url: str = ""
     # Bot avatari (JPG). Bot uni o'zi qo'yadi — faqat rasm o'zgargandagina qayta yuklanadi.
     # O'chirish uchun bo'sh qoldiring: BOT_AVATAR_FILE=
     bot_avatar_file: Path | None = PROJECT_ROOT / "assets" / "bot-avatar.jpg"
@@ -106,6 +112,17 @@ class Settings(BaseSettings):
         """ALLOWED_USER_IDS doubles as the owner list when ADMIN_IDS is not set explicitly."""
         if not self.admin_ids and self.allowed_user_ids:
             self.admin_ids = list(self.allowed_user_ids)
+        return self
+
+    @model_validator(mode="after")
+    def _platform_defaults(self) -> "Settings":
+        """On Render the public URL is known: use it for the Mini App and the keep-alive ping by default."""
+        external = self.render_external_url.strip().rstrip("/")
+        if external.lower().startswith("https://"):
+            if not self.webapp_url:
+                self.webapp_url = external
+            if not self.keepalive_url:
+                self.keepalive_url = external
         return self
 
     @model_validator(mode="after")

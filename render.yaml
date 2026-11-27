@@ -1,0 +1,15 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> TheFusion-S/mediabot
+# Free plan: no credit card. The bot pings its own URL (RENDER_EXTERNAL_URL) every 10 min so it does not sleep.
+services:
+  - type: web
+    name: mediabot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN      # asked once when you create the Blueprint (never stored in the repo)
+        sync: false
+      - key: ACCESS_MODE    # open = everyone; the owner switches it later with /mode
+        value: open

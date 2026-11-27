@@ -180,8 +180,11 @@ async def run(settings) -> None:
         with contextlib.suppress(NotImplementedError, RuntimeError):
             loop.add_signal_handler(sig, stop.set)
 
+    pinger = None
     try:
         await site.start()
+        if settings.keepalive_url.lower().startswith(("https://", "http://")):
+            pinger = asyncio.create_task(keepalive(settings.keepalive_url, settings.keepalive_interval_sec, stop))
         log.info("web server on http://%s:%s (webapp dir: %s)", settings.web_host, settings.web_port,
                  settings.webapp_dir)
         if settings.dev_mode:
@@ -223,12 +226,34 @@ async def run(settings) -> None:
                 polling.result()  # re-raise unexpected polling errors
     finally:
         log.info("shutting down...")
+        if pinger is not None:
+            pinger.cancel()
         await jobs.shutdown()
         await runner.cleanup()
         downloader.close()
         await storage.close()
         await bot.session.close()
         log.info("bye")
+
+
+async def keepalive(url: str, interval: float, stop: asyncio.Event) -> None:
+    """Ping our own public /healthz so free hosting (e.g. Render) does not put the service to sleep."""
+    import aiohttp
+
+    target = url.rstrip("/") + "/healthz"
+    log.info("keep-alive: pinging %s every %ds", target, int(interval))
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
+        while not stop.is_set():
+            try:
+                await asyncio.wait_for(stop.wait(), interval)
+                return
+            except asyncio.TimeoutError:
+                pass
+            try:
+                async with session.get(target) as resp:
+                    log.debug("keep-alive ping: HTTP %s", resp.status)
+            except Exception as exc:  # network hiccups must never stop the bot
+                log.info("keep-alive ping failed: %s", exc)
 
 
 async def wait_for_telegram(bot, stop: asyncio.Event, max_delay: float = 60.0):

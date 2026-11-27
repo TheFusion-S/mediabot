@@ -16,7 +16,7 @@ MediaBot Instagram (Reels, post, karusel) va YouTube (Shorts, oddiy video) havol
 
 > 🔑 **Kirishni egasi boshqaradi.** Bot standart holatda ochiq; egasi (`ADMIN_IDS`) botda `/mode` bilan uni yopiq
 > qilishi mumkin — shunda boshqalar "Ruxsat so'rash" tugmasini bosadi va egasi ✅/❌ bilan javob beradi (`/users`).
-> Tez boshlash uchun **[BOSHLASH.md](BOSHLASH.md)**, serverga (VPS) o'rnatish uchun **[SERVER.md](SERVER.md)** ni o'qing.
+> Tez boshlash: **[BOSHLASH.md](BOSHLASH.md)** · bepul bulutga (kartasiz): **[RENDER.md](RENDER.md)** · VPS: **[SERVER.md](SERVER.md)**.
 
 ## Tuzilma
 
